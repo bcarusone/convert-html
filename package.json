@@ -1,0 +1,10 @@
+{
+  "name": "webrender",
+  "version": "1.0.0",
+  "main": "init.js",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^21.1.0"
+  }
+}
