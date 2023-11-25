@@ -1,6 +1,5 @@
 'use strict';
 const buffer     = require('buffer');
-const path       = require('path');
 const express    = require('express');
 const bodyParser = require('body-parser');
 const puppeteer  = require('puppeteer');
@@ -45,13 +44,13 @@ var Webrender = express();
       var WIDTH       = parseInt(request.query.width  || '1280');
       var HEIGHT      = parseInt(request.query.height || '1024');
       var DEVICE      = request.query.emulate;
-      var MIMETYPE    = (req.query.mimetype || 'image/png').split(';').filter((v) => {
+      var MIMETYPE    = (request.query.mimetype || 'image/png').split(';').filter((v) => {
           return MIMETYPES[v.toLowerCase()]
       })[0];
       var CHROMEPATH  = process.env.WEBRENDER_CHROME_PATH;
 
       if (!MIMETYPE) {
-        return respondError(response, `Must request an output type using ?mimetypeor the 'Accept' request header`, 406);
+        return respondError(response, `Must request an output type using ?mimetype or the 'Accept' request header`, 406);
       }
 
       const BROWSER = await puppeteer.launch({
@@ -84,10 +83,10 @@ var Webrender = express();
           viewport: {
             height:            HEIGHT,
             width:             WIDTH,
-            deviceScaleFactor: parseFloat(req.query.scale || 1.0),
-            hasTouch:          parseBool(req.query.touch),
-            isLandscape:       parseBool(req.query.landscape),
-            isMobile:          parseBool(req.query.mobile),
+            deviceScaleFactor: parseFloat(request.query.scale || 1.0),
+            hasTouch:          parseBool(request.query.touch),
+            isLandscape:       parseBool(request.query.landscape),
+            isMobile:          parseBool(request.query.mobile),
           },
         });
       }
@@ -116,7 +115,7 @@ var Webrender = express();
       var output = null;
 
       // determine which call to use depending on the requested type
-      switch (MIMTETYPE) {
+      switch (MIMETYPE) {
         case 'application/pdf':
           output = await PAGE.pdf({
             format: 'letter',
@@ -147,6 +146,16 @@ var Webrender = express();
       return respondError(response, exc.toString());
     }
   })
+
+  Webrender.get('/health', async (req, res) => {
+      res.json({
+          status:  'ok',
+          service: 'webrender',
+      });
+  })
+
+  console.log(`Starting WebRender server on :${PORT}`);
+  Webrender.listen(PORT);
 })();
 
 function respondError(response, message, code) {
@@ -157,7 +166,7 @@ function respondError(response, message, code) {
   response.json({
       error: message,
   });
-  logging.error({
+  console.error({
       error:            true,
       message:          message,
       http_status_code: code,
